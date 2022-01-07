@@ -1,0 +1,123 @@
+service: ex-tic-tac-toe
+
+frameworkVersion: "2"
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  environment:
+    DOMAIN_SUFFIX: ex-tic-tac-toe
+  lambdaHashingVersion: 20201221
+  profile: serverlessUser
+  stage: dev
+  region: ca-central-1
+  httpApi:
+    cors: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+        - lambda:*
+      Resource: "*"
+
+functions:
+  join-game:
+    handler: lambdas/endpoints/game/socket-join-game.handler
+    events:
+      - websocket:
+          route: joinGame
+          routeResponseSelectionExpression: $default
+  app-load:
+    handler: lambdas/endpoints/websocket/socket-app-load.handler
+    events:
+      - websocket:
+          route: appLoad
+          routeResponseSelectionExpression: $default
+  send-move:
+    handler: lambdas/endpoints/game/socket-send-move.handler
+    events:
+      - websocket:
+          route: sendMove
+          routeResponseSelectionExpression: $default
+  connect:
+    handler: lambdas/endpoints/websocket/socket-connect.handler
+    events:
+      - websocket:
+          route: $connect
+          routeResponseSelectionExpression: $default
+  disconnect:
+    handler: lambdas/endpoints/websocket/socket-disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+          routeResponseSelectionExpression: $default
+  default:
+    handler: lambdas/endpoints/websocket/socket-default.handler
+    events:
+      - websocket:
+          route: $default
+  postConfirmation:
+    handler: lambdas/endpoints/cognito/http-register-account.handler
+    events:
+      - cognitoUserPool:
+          pool: MyUserPool
+          trigger: PostConfirmation
+  load-past-games:
+    handler: lambdas/endpoints/game/socket-load-past-games.handler
+    events:
+      - websocket:
+          route: loadPastGames
+          routeResponseSelectionExpression: $default
+resources:
+  Resources:
+    CognitoUserPoolMyUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: extreme-ttt-user-pool-${opt:stage, self:provider.stage}
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+    serviceUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-${self:custom.stage}-user-pool-client
+        UserPoolId:
+          Ref: CognitoUserPoolMyUserPool
+        GenerateSecret: false
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: exttt-users
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: sub
+            AttributeType: S
+        KeySchema:
+          - AttributeName: sub
+            KeyType: HASH
+    connectionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: exttt-connections
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connId
+            KeyType: HASH
+    gamesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: exttt-games
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH

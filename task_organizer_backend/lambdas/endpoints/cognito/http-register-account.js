@@ -5,8 +5,8 @@ const Formatting = require("../../common/Formatting");
 const Dynamo = require("../../common/dynamo");
 const Socket = require("../../common/socket");
 const Database = require("../../common/CommonDatabaseCalls");
-const SocketConstants = require("../../common/SocketConstants");
 const Tables = require("../../common/TableConstants");
+var documentClient = new AWS.DynamoDB.DocumentClient();
 exports.handler = async (event, context, callback) => {
   // TODO implement
   if (event.triggerSource != "PostConfirmation_ConfirmSignUp") {
@@ -17,7 +17,6 @@ exports.handler = async (event, context, callback) => {
       sub: event.request.userAttributes.sub,
       username: event.request.userAttributes.name,
       email: event.request.userAttributes.email,
-      courses: [],
     });
   } catch (err) {
     callback(JSON.stringify(err));

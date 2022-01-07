@@ -8,12 +8,9 @@ const Tables = require("../../common/TableConstants");
 exports.handler = async (event) => {
   const sub = Formatting.getSub(event);
   const eventData = Formatting.ensureObject(event.body);
-  const listAdd = await Dynamo.list_add(
-    Tables.USERS,
-    [{ sub: sub }],
-    "events",
-    [eventData.id]
-  );
-  await Dynamo.put(Tables.EVENTS, eventData);
-  return Responses._200({ message: "success", eventData, sub });
+  const ret = await Dynamo.update(Tables.USERS, "sub", {
+    sub,
+    courses: eventData,
+  });
+  return Responses._200(ret);
 };

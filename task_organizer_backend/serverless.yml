@@ -1,4 +1,4 @@
-service: ex-tic-tac-toe
+service: task-org
 
 frameworkVersion: "2"
 
@@ -9,7 +9,7 @@ provider:
   name: aws
   runtime: nodejs12.x
   environment:
-    DOMAIN_SUFFIX: ex-tic-tac-toe
+    DOMAIN_SUFFIX: task-org
   lambdaHashingVersion: 20201221
   profile: serverlessUser
   stage: dev
@@ -24,59 +24,75 @@ provider:
       Resource: "*"
 
 functions:
-  join-game:
-    handler: lambdas/endpoints/game/socket-join-game.handler
-    events:
-      - websocket:
-          route: joinGame
-          routeResponseSelectionExpression: $default
   app-load:
-    handler: lambdas/endpoints/websocket/socket-app-load.handler
+    handler: lambdas/endpoints/general/http-app-load.handler
     events:
-      - websocket:
-          route: appLoad
-          routeResponseSelectionExpression: $default
-  send-move:
-    handler: lambdas/endpoints/game/socket-send-move.handler
+      - http:
+          path: /
+          method: GET
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  edit-tasks:
+    handler: lambdas/endpoints/tasks/http-update-task.handler
     events:
-      - websocket:
-          route: sendMove
-          routeResponseSelectionExpression: $default
-  connect:
-    handler: lambdas/endpoints/websocket/socket-connect.handler
+      - http:
+          path: /tasks
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  edit-courses:
+    handler: lambdas/endpoints/tasks/http-update-courses.handler
     events:
-      - websocket:
-          route: $connect
-          routeResponseSelectionExpression: $default
-  disconnect:
-    handler: lambdas/endpoints/websocket/socket-disconnect.handler
+      - http:
+          path: /courses
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  edit-events:
+    handler: lambdas/endpoints/calendar/http-update-event.handler
     events:
-      - websocket:
-          route: $disconnect
-          routeResponseSelectionExpression: $default
-  default:
-    handler: lambdas/endpoints/websocket/socket-default.handler
+      - http:
+          path: /events
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  remove-event:
+    handler: lambdas/endpoints/calendar/http-remove-event.handler
     events:
-      - websocket:
-          route: $default
+      - http:
+          path: /events
+          method: DELETE
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+
   postConfirmation:
     handler: lambdas/endpoints/cognito/http-register-account.handler
     events:
       - cognitoUserPool:
           pool: MyUserPool
           trigger: PostConfirmation
-  load-past-games:
-    handler: lambdas/endpoints/game/socket-load-past-games.handler
-    events:
-      - websocket:
-          route: loadPastGames
-          routeResponseSelectionExpression: $default
+
 resources:
   Resources:
     CognitoUserPoolMyUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: extreme-ttt-user-pool-${opt:stage, self:provider.stage}
+        UserPoolName: task-organizer-user-pool-${opt:stage, self:provider.stage}
         UsernameAttributes:
           - email
         AutoVerifiedAttributes:
@@ -88,10 +104,22 @@ resources:
         UserPoolId:
           Ref: CognitoUserPoolMyUserPool
         GenerateSecret: false
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: CognitoUserPool
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ProviderARNs:
+          - Fn::GetAtt:
+              - CognitoUserPoolMyUserPool
+              - Arn
     usersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: exttt-users
+        TableName: task-org-users
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: sub
@@ -99,21 +127,21 @@ resources:
         KeySchema:
           - AttributeName: sub
             KeyType: HASH
-    connectionsTable:
+    eventsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: exttt-connections
+        TableName: task-org-events
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: connId
+          - AttributeName: id
             AttributeType: S
         KeySchema:
-          - AttributeName: connId
+          - AttributeName: id
             KeyType: HASH
-    gamesTable:
+    tasksTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: exttt-games
+        TableName: task-org-tasks
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: id

@@ -68,6 +68,17 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+  edit-links:
+    handler: lambdas/endpoints/general/http-update-links.handler
+    events:
+      - http:
+          path: /links
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
   remove-event:
     handler: lambdas/endpoints/calendar/http-remove-event.handler
     events:

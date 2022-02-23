@@ -10,6 +10,7 @@ exports.handler = async (event) => {
   const user = await Dynamo.get(Tables.USERS, { sub: sub });
   let taskObjs = [];
   let eventObjs = [];
+  let links = user.links ? user.links : [];
   const courses = user.courses ? user.courses : [];
   if (user.tasks && user.tasks.values.length > 0) {
     taskObjs = await Dynamo.getMultiple(
@@ -33,5 +34,6 @@ exports.handler = async (event) => {
     tasks: taskObjs,
     courses,
     events: eventObjs,
+    links,
   });
 };

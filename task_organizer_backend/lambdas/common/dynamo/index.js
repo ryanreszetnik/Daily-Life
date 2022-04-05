@@ -20,7 +20,7 @@ const Responses = {
     return await GET.scan(table, filterExpression, expressionValues);
   },
   //delete
-  async delete(table = "", key = "") {
+  async delete(table = "", key = {}) {
     return await DELETE.deleteSingle(table, key);
   },
   async deleteMultiple(table = "", key = "") {

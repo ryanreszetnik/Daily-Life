@@ -46,6 +46,17 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId:
               Ref: ApiGatewayAuthorizer
+  delete-task:
+    handler: lambdas/endpoints/tasks/http-delete-task.handler
+    events:
+      - http:
+          path: /tasks
+          method: DELETE
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
   edit-courses:
     handler: lambdas/endpoints/tasks/http-update-courses.handler
     events:
@@ -73,6 +84,28 @@ functions:
     events:
       - http:
           path: /links
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  set-scheduled:
+    handler: lambdas/endpoints/tasks/http-set-scheduled.handler
+    events:
+      - http:
+          path: /scheduled
+          method: PUT
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
+  set-new-scheduled:
+    handler: lambdas/endpoints/tasks/http-set-new-scheduled.handler
+    events:
+      - http:
+          path: /newscheduled
           method: PUT
           cors: true
           authorizer:
